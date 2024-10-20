@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include",
+                "/usr/include/ldap",
+                "/usr/include/ldap.h"
+
+            ],
+            "defines": [],
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "\"\\\\wsl.localhost\\Ubuntu\\usr\\bin\\gcc\""
+        }
+    ],
+    "version": 4
+}

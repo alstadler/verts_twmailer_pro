@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "mutex": "cpp",
+        "chrono": "cpp",
+        "cstring": "cpp",
+        "thread": "cpp",
+        "iostream": "cpp",
+        "string": "cpp"
+    }
+}
