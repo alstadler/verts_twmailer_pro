@@ -2,4 +2,46 @@ Git-Repository GitHub: https://github.com/alstadler/verts_twmailer_pro
 
 Developed by Stadler Alexander & Kržanović Aleksandar
 
-# Protokoll
+# 1. Building Application
+Make sure you're on a Linux OS
+Navigate to directory, use Makefile (make all), start Server on desired port (./twmailer-pro-server 8080) (Server should start listen on the port and create a blacklist.txt on first runtime), run client with server IP and port (./twmailer-client 127.0.0.1 8080) 
+Once connected, client can send commands to server
+
+# 2. Command Syntax
+LOGIN
+username
+password
+
+SEND
+receiver_username
+subject
+message body
+.
+
+LIST
+
+READ
+1   (Specified Message Number)
+
+DEL
+1   (Specified Message Number)
+
+QUIT
+
+# 3. Client-Server Architecture
+The server listens on a specified port for client connections. Every connection is handled on a seperate thread to ensure concurrent handling of mutltiple clients.
+The client connects to the server and sends commands (LOGIN, SEND, LIST, READ, DEL, QUIT) to interact with the server.
+The server processes these commands and reacts with appropriate methods.
+
+# 4. Authentication
+The server uses an LDAP server for authentication (ldap.technikum-wien.at). The server binds to the LDAP server using username and password provided by user. On successfull authentification, a session is established for user.
+
+# 5. IP-Blacklisting
+After 3 failed login attempts from an IP, the IP will be blacklisted for 1 minute to prevent brute-forcing. It is stored persistently and reloaded on server startup.
+
+# 6. Message Handling
+Users can send messages to another. These are stored in an inbox file associated with the user. 
+
+# 7. Synchronization
+The server is multi-threaded and uses mutexes and lock guards for shared resources.
+Protected sections by mutexes include session management, mail spool and IP blacklisting.
