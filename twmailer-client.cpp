@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 // Methods
 void send_command(int client_socket, const string &command) 
 {
+    cout << "Debug: Sending command: " << command << endl;
     send(client_socket, command.c_str(), command.length(), 0);  // Send command to server
 
     char buffer[BUFFER_SIZE];  // Buffer for response
@@ -96,26 +97,38 @@ bool login(int client_socket)
     cout << "Enter password: ";
     getline(cin, password);
 
-    send_command(client_socket, "LOGIN\n" + username + "\n" + password + "\n");  // Send LOGIN command and credentials to server
+    // Combine the data into a single message to send
+    string login_data = "LOGIN\n" + username + "\n" + password + "\n";
+    cout << "Debug: Sending login data: " << login_data << endl;
 
-    char buffer[BUFFER_SIZE];  // Buffer for response
+    // Ensure all data is sent
+    ssize_t bytes_sent = send(client_socket, login_data.c_str(), login_data.length(), 0);
+
+    if (bytes_sent == -1) 
+    {
+        cerr << "Error: Failed to send login data." << endl;
+        return false;
+    }
+    cout << "Debug: Bytes sent: " << bytes_sent << endl;
+
+    char buffer[BUFFER_SIZE];
     memset(buffer, 0, BUFFER_SIZE);
-
-    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);  // Receive response from server
+    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
     if (bytes_received > 0) 
     {
+        cout << "Debug: Login response: " << buffer << endl;
         if (string(buffer) == "OK\n") 
         {
             cout << "Login successful." << endl;
             return true;
         } else 
         {
-            cout << buffer;  // Display error message from server
+            cout << "Debug: Login failed response: " << buffer << endl;
             return false;
         }
     } else 
     {
-        cerr << "Error: No response from server during login." << endl;
+        cerr << "Error: No response from server during login. Bytes received: " << bytes_received << endl;
         return false;
     }
 }
