@@ -124,6 +124,7 @@ void handle_client(int client_socket, const string &client_ip)
     char buffer[BUFFER_SIZE];
     int login_attempts = 0;
 
+
     while (true) 
     {
         memset(buffer, 0, BUFFER_SIZE);
@@ -136,7 +137,10 @@ void handle_client(int client_socket, const string &client_ip)
         }
 
         string command(buffer);
-        command = command.substr(0, command.find('\n'));
+        string command_data = "";
+        command_data += string(buffer);
+        stringstream ss(command_data); // ss is at the start of command_data
+        getline(ss, command); // get the command, ss is the the point where the cursor is at the moment (at the start)
 
         if (command == "LOGIN") 
         {
@@ -145,15 +149,15 @@ void handle_client(int client_socket, const string &client_ip)
                 send(client_socket, "Error: Blacklisted IP.\n", 23, 0);
                 break;
             }
-
+            
+            string username, password;
             // Handle LOGIN
             memset(buffer, 0, BUFFER_SIZE);
-            recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-            string username = string(buffer).substr(0, string(buffer).find('\n'));
+            getline(ss, username); // get username, ss is the the point where the cursor is at the moment (after the command)
+            
 
             memset(buffer, 0, BUFFER_SIZE);
-            recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-            string password = string(buffer).substr(0, string(buffer).find('\n'));
+            getline(ss, password); // get password, ss is the the point where the cursor is at the moment (after the username)
 
             if (authenticate_with_ldap(username, password)) 
             {
@@ -164,6 +168,7 @@ void handle_client(int client_socket, const string &client_ip)
             } else 
             {
                 // Failed login
+                cout << "Failed LOGIN" << endl;
                 login_attempts++;
                 failed_login_attempts[client_ip]++;
 
@@ -186,13 +191,11 @@ void handle_client(int client_socket, const string &client_ip)
 
                 // Get receiver
                 memset(buffer, 0, BUFFER_SIZE);
-                recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-                receiver = string(buffer).substr(0, string(buffer).find('\n'));
+                getline(ss, receiver);
 
                 // Get subject
                 memset(buffer, 0, BUFFER_SIZE);
-                recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-                subject = string(buffer).substr(0, string(buffer).find('\n'));
+                getline(ss, subject);
 
                 if (subject.length() > MAX_SUBJECT_LENGTH) 
                 {
@@ -200,7 +203,8 @@ void handle_client(int client_socket, const string &client_ip)
                     continue;
                 }
 
-                message = read_message(client_socket);  // Get message body dynamically
+                //message = read_message(client_socket);  // Get message body dynamically
+                getline(ss, message);
 
                 // Store message in receiver inbox
                 lock_guard<mutex> mail_lock(mail_mutex);
@@ -265,7 +269,6 @@ void handle_client(int client_socket, const string &client_ip)
             {
                 // Handle READ Command
                 memset(buffer, 0, BUFFER_SIZE);
-                recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
                 int msg_num = atoi(buffer);
 
                 std::lock_guard<std::mutex> lock(mail_mutex);
@@ -317,7 +320,6 @@ void handle_client(int client_socket, const string &client_ip)
             {
                 // Handle DEL Command
                 memset(buffer, 0, BUFFER_SIZE);
-                recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
                 int msg_num = atoi(buffer);
 
                 std::lock_guard<std::mutex> lock(mail_mutex);
@@ -374,6 +376,7 @@ void handle_client(int client_socket, const string &client_ip)
 
         } else if (command == "QUIT") 
         {
+            send(client_socket, "OK\n", 3, 0);
             break; // End the client session
 
         } else 
@@ -440,7 +443,8 @@ bool authenticate_with_ldap(const string &username, const string &password) // S
 {
     LDAP *ldap;
     int version = LDAP_VERSION3;
-    int rc = ldap_initialize(&ldap, ("ldap://" + LDAP_HOST).c_str());
+    int rc = ldap_initialize(&ldap, ("ldap://" + LDAP_HOST + ":389").c_str());
+
 
     if (rc != LDAP_SUCCESS) 
     {
@@ -449,21 +453,23 @@ bool authenticate_with_ldap(const string &username, const string &password) // S
     }
 
     ldap_set_option(ldap, LDAP_OPT_PROTOCOL_VERSION, &version);
-    string user_dn = "uid=" + username + "," + LDAP_BASE;
+    string user_dn = "uid=" + username + ",ou=people," + LDAP_BASE;
+
 
     // Debug message: Check the constructed user DN
     cout << "Debug: Attempting LDAP bind for DN: " << user_dn << endl;
 
     // Structure to hold password information for ldap_sasl_bind_s
-    struct berval cred;
+    berval cred;
     cred.bv_val = const_cast<char *>(password.c_str());
     cred.bv_len = password.length();
+    berval *servercredp; // this is a test
 
     // Debug message: Check if credentials are being set
     cout << "Debug: Credentials set, attempting LDAP bind..." << endl;
 
     // Using ldap_sasl_bind_s for simple authentication
-    rc = ldap_sasl_bind_s(ldap, user_dn.c_str(), LDAP_SASL_SIMPLE, &cred, nullptr, nullptr, nullptr);
+    rc = ldap_sasl_bind_s(ldap, user_dn.c_str(), LDAP_SASL_SIMPLE, &cred, nullptr, nullptr, &servercredp); //this is a test
 
     if (rc != LDAP_SUCCESS) 
     {
