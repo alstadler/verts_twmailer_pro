@@ -190,17 +190,14 @@ void handle_client(int client_socket, const string &client_ip)
                 // Handle SEND command
                 string receiver, subject, message;
                 
-                cout << "In the SEND command" << endl;
                 // Get receiver
                 memset(buffer, 0, BUFFER_SIZE);
                 getline(ss, receiver);
                 
-                cout << receiver << " this is a receiver" << endl;
                 // Get subject
                 memset(buffer, 0, BUFFER_SIZE);
                 getline(ss, subject);
 
-                cout << subject << " this is a subject" << endl;
                 if (subject.length() > MAX_SUBJECT_LENGTH) 
                 {
                     send(client_socket, "Error: Subject too long.\n", 24, 0);
@@ -208,14 +205,12 @@ void handle_client(int client_socket, const string &client_ip)
                 }
 
                 getline(ss, message);
-                cout << message << " this is a message" << endl;
 
                 // Store message in receiver inbox
                 lock_guard<mutex> mail_lock(mail_mutex);
                 fs::path inbox_path = "mail_spool/" + receiver + "_inbox";
                 ofstream outfile(inbox_path, ios::app);
                 
-                cout << "After storing a message in reveiver box" << endl;
                 if (!outfile) 
                 {
                     send(client_socket, "Error: Failed to store message.\n", 33, 0);

@@ -93,8 +93,9 @@ bool login(int client_socket)
 
     cout << "Enter username: ";
     getline(cin, username);
-    cout << "Enter password: ";
-    getline(cin, password);
+    //cout << "Enter password: ";
+    //getline(cin, password);
+    password = getpass("Enter password: ");
 
     //send_command(client_socket, "LOGIN\n" + username + "\n" + password + "\n");  // Send LOGIN command and credentials to server
     const string command = "LOGIN\n" + username + "\n" + password + "\n"; // This is a test
